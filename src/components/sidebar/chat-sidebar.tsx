@@ -1,0 +1,135 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { LogOut, Pin, Plus, Search, Settings, Trash2 } from 'lucide-react';
+
+export interface ChatSummary {
+  id: string;
+  title: string;
+  modelId: string;
+  isPinned: boolean;
+  updatedAt: string;
+}
+
+interface Props {
+  chats: ChatSummary[];
+  activeChatId?: string;
+  open: boolean;
+  onNewChat: () => void;
+  onSearch: (q: string) => void;
+  onTogglePin: (id: string, isPinned: boolean) => void;
+  onDelete: (id: string) => void;
+  onOpenSettings: () => void;
+}
+
+function Group({
+  title,
+  items,
+  props,
+}: {
+  title: string;
+  items: ChatSummary[];
+  props: Pick<Props, 'activeChatId' | 'onTogglePin' | 'onDelete'>;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="pb-3">
+      <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wider text-muted">{title}</p>
+      {items.map((c) => {
+        const active = c.id === props.activeChatId;
+        return (
+          <div
+            key={c.id}
+            className={`group flex items-center gap-1 rounded-xl pr-2 text-sm transition ${
+              active ? 'bg-surface-2 text-white' : 'text-[#b5b5b5] hover:bg-surface hover:text-white'
+            }`}
+          >
+            <Link href={`/chat/${c.id}`} className="min-w-0 flex-1 truncate px-3 py-2">
+              {c.title}
+            </Link>
+            <button
+              onClick={() => props.onTogglePin(c.id, !c.isPinned)}
+              title={c.isPinned ? 'Lepas pin' : 'Pin'}
+              className={`rounded-full p-1 transition ${
+                c.isPinned ? 'text-white' : 'text-muted opacity-0 hover:text-white group-hover:opacity-100'
+              }`}
+            >
+              <Pin size={13} />
+            </button>
+            <button
+              onClick={() => props.onDelete(c.id)}
+              title="Hapus"
+              className="rounded-full p-1 text-muted opacity-0 transition hover:text-white group-hover:opacity-100"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function ChatSidebar({
+  chats,
+  activeChatId,
+  open,
+  onNewChat,
+  onSearch,
+  onTogglePin,
+  onDelete,
+  onOpenSettings,
+}: Props) {
+  const [query, setQuery] = useState('');
+
+  async function logout() {
+    await fetch('/api/auth', { method: 'DELETE' });
+    window.location.href = '/login';
+  }
+
+  const shared = { activeChatId, onTogglePin, onDelete };
+
+  return (
+    <aside
+      className={`shrink-0 overflow-hidden border-r border-line bg-[#0f0f0f] transition-[width] duration-300 ease-out ${open ? 'w-72' : 'w-0 border-r-0'}`}
+    >
+      <div className="flex h-screen w-72 flex-col p-3">
+        <button
+          onClick={onNewChat}
+          className="mb-3 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-white transition hover:bg-surface-2"
+        >
+          <Plus size={15} /> Chat baru
+        </button>
+
+        <div className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+          <Search size={14} className="text-muted" />
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              onSearch(e.target.value);
+            }}
+            placeholder="Cari chat"
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-muted"
+          />
+        </div>
+
+        <nav className="-mr-1 flex-1 overflow-y-auto pr-1">
+          {chats.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted">Belum ada riwayat chat.</p>}
+          <Group title="Disematkan" items={chats.filter((c) => c.isPinned)} props={shared} />
+          <Group title="Terbaru" items={chats.filter((c) => !c.isPinned)} props={shared} />
+        </nav>
+
+        <div className="flex items-center justify-between border-t border-line pt-2.5 text-sm text-muted">
+          <button onClick={onOpenSettings} className="flex items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-surface hover:text-white">
+            <Settings size={15} /> Pengaturan
+          </button>
+          <button onClick={() => void logout()} title="Keluar" className="rounded-xl p-2 transition hover:bg-surface hover:text-white">
+            <LogOut size={15} />
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}

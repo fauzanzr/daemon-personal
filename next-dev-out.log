@@ -1,0 +1,12 @@
+▲ Next.js 16.4.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+✓ Ready in 981ms
+✓ Running next.config.ts took 74ms
+
+ GET /login 200 in 1474ms (next.js: 1065ms, proxy.ts: 145ms, application-code: 264ms)
+ POST /api/auth 200 in 200ms (next.js: 141ms, proxy.ts: 15ms, application-code: 44ms)
+ POST /api/extract 415 in 304ms (next.js: 179ms, proxy.ts: 15ms, application-code: 110ms)
+ POST /api/extract 422 in 132ms (next.js: 10ms, proxy.ts: 11ms, application-code: 111ms)
+ POST /api/extract 200 in 36ms (next.js: 4ms, proxy.ts: 8ms, application-code: 24ms)
