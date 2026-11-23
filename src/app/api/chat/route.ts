@@ -258,7 +258,10 @@ export async function POST(req: Request) {
   }
 
   const headers: Record<string, string> = { 'X-Model-Used': used, 'X-Web-Search': searchMode };
-  if (used !== modelId) headers['X-Fallback-From'] = modelId;
+  if (used !== modelId) {
+    headers['X-Fallback-From'] = modelId;
+    if (lastErr) headers['X-Fallback-Reason'] = errMsg(lastErr).replace(/[\r\n]+/g, ' ').slice(0, 140);
+  }
 
   return createUIMessageStreamResponse({ stream, headers });
 }

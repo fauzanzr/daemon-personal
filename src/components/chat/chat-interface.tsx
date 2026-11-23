@@ -180,8 +180,16 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
           const res = await fetch(input, init);
           lastModelUsed.current = res.headers.get('x-model-used');
           lastSearchMode.current = res.headers.get('x-web-search');
+          const fallbackFrom = res.headers.get('x-fallback-from');
+          const fallbackReason = res.headers.get('x-fallback-reason');
           if (lastSearchMode.current === 'no-key') {
             setNotice('Web Search requires a free Tavily API key in Settings -> API Keys.');
+          } else if (fallbackFrom && lastModelUsed.current) {
+            setNotice(
+              `Switched from ${modelLabel(fallbackFrom)} to ${modelLabel(lastModelUsed.current)}${
+                fallbackReason ? ` (${fallbackReason})` : ''
+              }`,
+            );
           }
           return res;
         },
