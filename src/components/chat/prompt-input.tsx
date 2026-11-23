@@ -115,7 +115,7 @@ export function PromptInput({
                 className="flex animate-fade-up items-center gap-1.5 rounded-full border border-line bg-surface-2 px-3 py-1 text-xs"
               >
                 <FileText size={12} className="text-white" />
-                {d.name} · ~{d.estimatedTokens.toLocaleString()} token
+                {d.name} · ~{d.estimatedTokens.toLocaleString()} tokens
                 <button aria-label="Remove document" onClick={() => setDocs((p) => p.filter((_, j) => j !== i))}>
                   <X size={12} className="text-muted hover:text-white" />
                 </button>
@@ -141,7 +141,7 @@ export function PromptInput({
           ref={areaRef}
           value={text}
           rows={1}
-          placeholder="Tanyakan apa saja... (Ctrl+V untuk paste screenshot)"
+          placeholder="Ask anything... (Ctrl+V to paste a screenshot)"
           onChange={(e) => {
             setText(e.target.value);
             autoResize();

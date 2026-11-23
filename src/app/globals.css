@@ -52,3 +52,11 @@ body {
 ::selection {
   background: rgba(255, 255, 255, 0.2);
 }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f2f2f2;
+  -webkit-box-shadow: 0 0 0 1000px #0b0b0b inset;
+  transition: background-color 9999s ease-in-out 0s;
+}

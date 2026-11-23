@@ -11,8 +11,8 @@ const health = new Map<string, HealthEntry>();
 
 /** Baseline hints for free-tier models that commonly experience queue/demand spikes. */
 const BASELINE: Record<string, { state: TrafficState; reason: string }> = {
-  'gemini-3.8-flash': { state: 'high_traffic', reason: 'Sering high demand di free tier' },
-  'google/gemma-4-31b-it:free': { state: 'busy', reason: 'Antrean provider gratis' },
+  'gemini-3.8-flash': { state: 'high_traffic', reason: 'Frequent high demand on free tier' },
+  'google/gemma-4-31b-it:free': { state: 'busy', reason: 'Free-tier provider queue' },
 };
 
 export function markModelHighTraffic(modelId: string, reason = 'High traffic / rate limit'): void {

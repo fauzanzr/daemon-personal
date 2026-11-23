@@ -4,14 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type FileUIPart, type UIMessage } from 'ai';
-import { PanelLeft, Terminal } from 'lucide-react';
+import { ChevronDown, PanelLeft, RefreshCw, X } from 'lucide-react';
+import { DaemonLogo } from '@/components/brand/daemon-logo';
 import { PromptInput, type PromptSubmit } from './prompt-input';
 import { MessageBubble, messageText } from './message-bubble';
 import { ModelSelector } from './model-selector';
 import { Markdown } from './markdown';
 import { ChatSidebar, type ChatSummary } from '@/components/sidebar/chat-sidebar';
 import { SettingsModal, type PresetItem } from '@/components/sidebar/settings-modal';
-import { modelLabel } from '@/lib/models';
+import { getContextWindow, modelLabel } from '@/lib/models';
 import { useModels } from '@/lib/custom-models';
 import { streamChatText } from '@/lib/chat-client';
 import { getByokHeaders } from '@/lib/byok';
@@ -53,17 +54,29 @@ function buildAttachmentMeta(p: PromptSubmit) {
 
 function getLoadingReason(seconds: number, modelId: string, webSearch: boolean): string {
   const name = modelLabel(modelId);
-  if (webSearch && seconds < 4) return 'Mencari informasi terbaru di web...';
-  if (seconds < 5) return `Menghubungi ${name}...`;
-  if (seconds < 12) return `${name} sedang memproses atau mengalami antrean (high traffic)...`;
-  return `Antrean padat di ${name}, mencoba respons atau beralih ke model cadangan...`;
+  if (webSearch && seconds < 4) return 'Searching the web for up-to-date information...';
+  if (seconds < 5) return `Contacting ${name}...`;
+  if (seconds < 12) return `${name} is processing or experiencing high traffic...`;
+  return `Queue is busy on ${name}, waiting for response or switching to fallback...`;
 }
 
 export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
   const router = useRouter();
   const models = useModels();
+  const [tabReady, setTabReady] = useState(false);
   const [chatId, setChatId] = useState<string | undefined>(initialChatId);
   const chatIdRef = useRef<string | undefined>(initialChatId);
+
+  // Require fresh PIN login whenever the tab or browser was closed and reopened
+  useEffect(() => {
+    if (sessionStorage.getItem('daemon_tab_session') !== '1') {
+      void fetch('/api/auth', { method: 'DELETE' }).finally(() => {
+        window.location.replace('/login');
+      });
+      return;
+    }
+    setTabReady(true);
+  }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -87,6 +100,8 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
   const [reviseBusy, setReviseBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [waitSeconds, setWaitSeconds] = useState(0);
+  const [switchMenuOpen, setSwitchMenuOpen] = useState(false);
+  const lastSubmittedRef = useRef<PromptSubmit | null>(null);
 
   const settings = useRef({ modelId, slidingWindow, webSearch, systemPrompt });
   useEffect(() => {
@@ -166,7 +181,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
           lastModelUsed.current = res.headers.get('x-model-used');
           lastSearchMode.current = res.headers.get('x-web-search');
           if (lastSearchMode.current === 'no-key') {
-            setNotice('Web Search memerlukan Tavily API Key gratis di Pengaturan -> API Keys.');
+            setNotice('Web Search requires a free Tavily API key in Settings -> API Keys.');
           }
           return res;
         },
@@ -198,6 +213,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
   useEffect(() => {
     if (!waitingFirstToken) {
       setWaitSeconds(0);
+      setSwitchMenuOpen(false);
       return;
     }
     const start = Date.now();
@@ -251,8 +267,27 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
   const streaming = status === 'submitted' || status === 'streaming';
   const compareRunning = !!compare && compare.some((c) => !c.done);
 
+  // Estimate active context usage (% of model window) so user knows when to start a new chat
+  const contextUsage = useMemo(() => {
+    const activeMsgs = slidingWindow ? messages.slice(-10) : messages;
+    const chars = activeMsgs.reduce((sum, m) => sum + messageText(m).length, 0) + systemPrompt.length;
+    const tokens = Math.ceil(chars / 4);
+    const limit = getContextWindow(modelId);
+    const pct = Math.min(100, Math.round((tokens / limit) * 100));
+    return { tokens, limit, pct };
+  }, [messages, slidingWindow, systemPrompt, modelId]);
+
+  const startNewChat = useCallback(() => {
+    chatIdRef.current = undefined;
+    setChatId(undefined);
+    setMessages([]);
+    setCompare(null);
+    router.push('/');
+  }, [router, setMessages]);
+
   async function handleSubmit(p: PromptSubmit) {
     setNotice('');
+    lastSubmittedRef.current = p;
     const activeId = await ensureChat(p.text || p.documents[0]?.name || 'Screenshot');
     void saveMessageToDb(activeId, {
       role: 'user',
@@ -368,7 +403,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
     setCompareModels((prev) => {
       if (prev.includes(id)) return prev.length > 2 ? prev.filter((x) => x !== id) : prev;
       if (prev.length >= 3) {
-        setNotice('Maksimal 3 model untuk Compare.');
+        setNotice('Maximum 3 models can be compared at once.');
         return prev;
       }
       return [...prev, id];
@@ -398,22 +433,36 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
   async function deleteChat(id: string) {
     await fetch(`/api/chats/${id}`, { method: 'DELETE' });
     if (chatIdRef.current === id) {
-      chatIdRef.current = undefined;
-      setChatId(undefined);
-      setMessages([]);
-      router.push('/');
+      startNewChat();
     }
     void loadChats();
   }
 
-  const STARTERS = [
-    'Jelaskan konsep async/await di JavaScript dengan contoh sederhana',
-    'Berita teknologi AI terbaru minggu ini',
-    'Bantu saya menulis email profesional untuk meminta cuti',
-    'Buatkan rencana belajar TypeScript selama 4 minggu',
-  ];
+  async function cancelAndSwitchModel(nextModelId: string) {
+    setSwitchMenuOpen(false);
+    await stop();
+    setModelId(nextModelId);
+    settings.current = { ...settings.current, modelId: nextModelId };
+    const last = lastSubmittedRef.current;
+    if (!last) return;
+    // Remove the trailing unanswered user message so we don't duplicate it on retry
+    setMessages((prev) => {
+      const copy = [...prev];
+      if (copy.length > 0 && copy[copy.length - 1].role === 'user') copy.pop();
+      return copy;
+    });
+    const files: FileUIPart[] = last.images.map((url) => ({ type: 'file', mediaType: 'image/jpeg', url }));
+    setTimeout(() => {
+      void sendMessage({ text: last.textWithDocuments, files });
+    }, 80);
+  }
+
   const webLabelFor = (id: string) =>
     searchUsed[id] ? (searchUsed[id] === 'google-grounding' ? 'Google Search' : 'Web · Tavily') : undefined;
+
+  if (!tabReady) {
+    return <div className="h-screen bg-bg" />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -421,13 +470,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
         chats={chats}
         activeChatId={chatId}
         open={sidebarOpen}
-        onNewChat={() => {
-          chatIdRef.current = undefined;
-          setChatId(undefined);
-          setMessages([]);
-          setCompare(null);
-          router.push('/');
-        }}
+        onNewChat={startNewChat}
         onSearch={(q) => void loadChats(q)}
         onTogglePin={(id, pin) => void togglePin(id, pin)}
         onDelete={(id) => void deleteChat(id)}
@@ -435,11 +478,11 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-1 border-b border-line/60 px-3 py-2.5">
+        <header className="flex flex-wrap items-center gap-2 border-b border-line/60 px-3 py-2.5">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="rounded-full p-2 text-muted transition hover:bg-surface hover:text-white"
-            title="Sidebar"
+            title="Toggle sidebar"
           >
             <PanelLeft size={18} />
           </button>
@@ -448,10 +491,10 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
             <select
               value={activePresetId}
               onChange={(e) => applyPreset(e.target.value)}
-              className="max-w-40 rounded-full bg-transparent px-3 py-1.5 text-sm text-muted outline-none transition hover:bg-surface hover:text-white"
+              className="max-w-44 rounded-full bg-transparent px-3 py-1.5 text-sm text-muted outline-none transition hover:bg-surface hover:text-white"
             >
               <option value="" className="bg-surface">
-                Prompt default
+                Default prompt
               </option>
               {presets.map((p) => (
                 <option key={p.id} value={p.id} className="bg-surface">
@@ -460,20 +503,46 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
               ))}
             </select>
           )}
-          <label className="ml-auto flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-xs text-muted transition hover:bg-surface hover:text-white">
-            <input
-              type="checkbox"
-              checked={slidingWindow}
-              onChange={(e) => setSlidingWindow(e.target.checked)}
-              className="accent-white"
-            />
-            Hemat token (10 pesan)
-          </label>
+
+          <div className="ml-auto flex items-center gap-3">
+            <div
+              title={`Estimated context used: ~${contextUsage.tokens.toLocaleString()} / ${contextUsage.limit.toLocaleString()} tokens (${contextUsage.pct}%)${
+                contextUsage.pct >= 70 ? ' — Consider starting a new chat' : ''
+              }`}
+              className="flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs text-muted"
+            >
+              <span>Context {contextUsage.pct}%</span>
+              <span className="h-1.5 w-14 overflow-hidden rounded-full bg-surface-2">
+                <span
+                  className="block h-full rounded-full bg-white transition-all duration-300"
+                  style={{ width: `${Math.max(contextUsage.tokens > 0 ? 4 : 0, contextUsage.pct)}%` }}
+                />
+              </span>
+              {contextUsage.pct >= 70 && (
+                <button
+                  onClick={startNewChat}
+                  className="ml-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-black transition hover:bg-neutral-200"
+                >
+                  {contextUsage.pct >= 90 ? 'Limit near · New chat' : 'New chat'}
+                </button>
+              )}
+            </div>
+
+            <label className="flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1.5 text-xs text-muted transition hover:bg-surface hover:text-white">
+              <input
+                type="checkbox"
+                checked={slidingWindow}
+                onChange={(e) => setSlidingWindow(e.target.checked)}
+                className="accent-white"
+              />
+              Save tokens (last 10)
+            </label>
+          </div>
         </header>
 
         {compareMode && (
           <div className="flex animate-fade-up flex-wrap items-center gap-2 border-b border-line/60 px-5 py-2.5 text-xs text-muted">
-            <span>Bandingkan 2-3 model:</span>
+            <span>Compare 2–3 models:</span>
             {models.map((m) => {
               const on = compareModels.includes(m.id);
               return (
@@ -494,25 +563,13 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
         <main className="flex-1 overflow-y-auto px-4">
           {messages.length === 0 && !compare ? (
             <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center pb-16">
-              <div className="mb-8 animate-fade-up text-center">
+              <div className="animate-fade-up text-center">
                 <h2 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">
-                  Halo, ada yang bisa dibantu?
+                  How can I help you today?
                 </h2>
                 <p className="mt-3 text-sm text-muted">
-                  Aktifkan Web Search untuk informasi terkini, atau lampirkan dokumen dan screenshot.
+                  Enable Web Search for real-time answers, or attach documents and paste screenshots.
                 </p>
-              </div>
-              <div className="grid w-full max-w-2xl gap-2.5 sm:grid-cols-2">
-                {STARTERS.map((s) => (
-                  <button
-                    key={s}
-                    disabled={streaming}
-                    onClick={() => void handleSubmit({ text: s, textWithDocuments: s, images: [], documents: [] })}
-                    className="animate-fade-up rounded-2xl border border-line bg-surface px-4 py-3.5 text-left text-sm text-[#d4d4d4] transition hover:border-white/25 hover:bg-surface-2 hover:text-white"
-                  >
-                    {s}
-                  </button>
-                ))}
               </div>
             </div>
           ) : (
@@ -529,7 +586,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
                   {alternatives[m.id]?.length ? (
                     <details className="ml-10 text-xs text-muted">
                       <summary className="cursor-pointer select-none hover:text-white">
-                        {alternatives[m.id].length} jawaban alternatif diarsipkan
+                        {alternatives[m.id].length} archived alternative{alternatives[m.id].length > 1 ? 's' : ''}
                       </summary>
                       {alternatives[m.id].map((a) => (
                         <div key={a.modelId} className="mt-2 rounded-2xl border border-line bg-surface p-4">
@@ -544,25 +601,59 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
 
               {waitingFirstToken && (
                 <div className="flex animate-fade-up items-start gap-3.5">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-surface">
-                    <Terminal size={13} className="animate-pulse text-white" />
+                  <div className="mt-0.5 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                    <DaemonLogo size={28} className="animate-pulse" />
                   </div>
-                  <div className="flex flex-wrap items-center gap-2.5 pt-1.5">
-                    <span className="flex items-center gap-1">
-                      {[0, 150, 300].map((d) => (
-                        <span
-                          key={d}
-                          className="h-1.5 w-1.5 animate-dot rounded-full bg-white"
-                          style={{ animationDelay: `${d}ms` }}
-                        />
-                      ))}
-                    </span>
-                    <span className="text-xs text-muted">
-                      {getLoadingReason(waitSeconds, modelId, webSearch)}
-                    </span>
-                    {waitSeconds >= 2 && (
-                      <span className="font-mono text-[11px] text-muted/70">{waitSeconds}d</span>
-                    )}
+                  <div className="space-y-2.5 pt-1.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="flex items-center gap-1">
+                        {[0, 150, 300].map((d) => (
+                          <span
+                            key={d}
+                            className="h-1.5 w-1.5 animate-dot rounded-full bg-white"
+                            style={{ animationDelay: `${d}ms` }}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-xs text-muted">{getLoadingReason(waitSeconds, modelId, webSearch)}</span>
+                      {waitSeconds >= 2 && <span className="font-mono text-[11px] text-muted/70">{waitSeconds}s</span>}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void stop()}
+                        className="flex items-center gap-1 rounded-full border border-line bg-surface px-3 py-1 text-xs text-[#d4d4d4] transition hover:border-white/40 hover:text-white"
+                      >
+                        <X size={12} /> Cancel
+                      </button>
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setSwitchMenuOpen((v) => !v)}
+                          className="flex items-center gap-1.5 rounded-full border border-white/25 bg-surface-2 px-3 py-1 text-xs text-white transition hover:border-white/50"
+                        >
+                          <RefreshCw size={11} /> Switch model & retry <ChevronDown size={12} />
+                        </button>
+                        {switchMenuOpen && (
+                          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-64 w-64 animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
+                            {models
+                              .filter((m) => m.id !== modelId)
+                              .map((m) => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => void cancelAndSwitchModel(m.id)}
+                                  className="block w-full rounded-xl px-3 py-2 text-left text-xs text-[#e5e5e5] transition hover:bg-surface-2 hover:text-white"
+                                >
+                                  {m.label}
+                                </button>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -600,7 +691,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
                         ) : c.text ? (
                           <Markdown>{c.text}</Markdown>
                         ) : (
-                          <p className="text-xs text-muted">Menunggu respons {modelLabel(c.modelId)}...</p>
+                          <p className="text-xs text-muted">Waiting for {modelLabel(c.modelId)}...</p>
                         )}
                       </div>
                       <button
@@ -608,7 +699,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
                         onClick={() => selectMain(i)}
                         className="mt-4 rounded-full bg-white py-2 text-sm font-medium text-black transition hover:bg-neutral-200 disabled:opacity-30"
                       >
-                        Pilih sebagai jawaban utama
+                        Select as Main Answer
                       </button>
                     </div>
                   ))}
@@ -632,7 +723,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
             onToggleCompare={() => setCompareMode((v) => !v)}
           />
           <p className="mt-2 text-center text-[11px] text-muted/70">
-            AI bisa keliru. Jangan kirim data rahasia ke model gratis.
+            AI can make mistakes. Avoid sending private credentials to free-tier models.
           </p>
         </footer>
       </div>

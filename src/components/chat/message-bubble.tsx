@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, ChevronDown, Copy, FileText, Terminal, Wand2 } from 'lucide-react';
+import { Check, ChevronDown, Copy, FileText, Wand2 } from 'lucide-react';
 import type { UIMessage } from 'ai';
 import { Markdown } from './markdown';
+import { DaemonLogo } from '@/components/brand/daemon-logo';
 import { useModels } from '@/lib/custom-models';
 import { modelLabel } from '@/lib/models';
 
@@ -57,8 +58,8 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
 
   return (
     <div className="group flex animate-fade-up gap-3.5">
-      <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-surface">
-        <Terminal size={13} className="text-white" />
+      <div className="mt-0.5 shrink-0 overflow-hidden rounded-lg border border-white/10">
+        <DaemonLogo size={28} />
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <div className="text-[15px]">
@@ -73,7 +74,7 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
             }}
             className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition hover:bg-surface hover:text-white"
           >
-            {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Disalin' : 'Salin'}
+            {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : 'Copy'}
           </button>
           {onRevise && (
             <div className="relative">
@@ -82,7 +83,7 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
                 onClick={() => setMenu((v) => !v)}
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition hover:bg-surface hover:text-white disabled:opacity-40"
               >
-                <Wand2 size={13} /> Revisi dengan model lain <ChevronDown size={12} />
+                <Wand2 size={13} /> Revise with another model <ChevronDown size={12} />
               </button>
               {menu && (
                 <div className="absolute bottom-full left-0 z-20 mb-1 max-h-72 w-64 animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">

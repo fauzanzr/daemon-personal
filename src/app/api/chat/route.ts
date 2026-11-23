@@ -102,13 +102,21 @@ async function startStream(
     }
   }
 
+  // Allow up to 15s for the first token; if a model stalls in queue, abort so fallback can take over.
+  const firstTokenController = new AbortController();
+  const onReqAbort = () => firstTokenController.abort(req.signal.reason);
+  req.signal.addEventListener('abort', onReqAbort, { once: true });
+  const firstTokenTimer = setTimeout(() => {
+    firstTokenController.abort(new Error('503 Request timed out waiting for first token'));
+  }, 15_000);
+
   let streamError: unknown;
   const result = streamText({
     model: resolveModel(modelId, keys),
     messages,
     system,
     tools,
-    abortSignal: req.signal,
+    abortSignal: firstTokenController.signal,
     maxRetries: 0,
     onError: ({ error }) => {
       streamError = error;
@@ -119,19 +127,29 @@ async function startStream(
   const buffered: UIMessageChunk[] = [];
   let done = false;
 
-  while (!done) {
-    const r = await reader.read();
-    if (r.done) {
-      done = true;
-      break;
+  try {
+    while (!done) {
+      const r = await reader.read();
+      if (r.done) {
+        done = true;
+        break;
+      }
+      buffered.push(r.value);
+      if (r.value.type === 'error') {
+        throw streamError ?? new Error((r.value as { errorText?: string }).errorText);
+      }
+      if (r.value.type === 'text-delta' || r.value.type === 'reasoning-delta') break;
     }
-    buffered.push(r.value);
-    if (r.value.type === 'error') {
-      throw streamError ?? new Error((r.value as { errorText?: string }).errorText);
+    if (streamError) throw streamError;
+  } catch (err) {
+    if (firstTokenController.signal.aborted && !req.signal.aborted) {
+      throw new Error('503 Model timed out waiting for first token');
     }
-    if (r.value.type === 'text-delta' || r.value.type === 'reasoning-delta') break;
+    throw err;
+  } finally {
+    clearTimeout(firstTokenTimer);
+    req.signal.removeEventListener('abort', onReqAbort);
   }
-  if (streamError) throw streamError;
 
   const stream = new ReadableStream<UIMessageChunk>({
     start(controller) {

@@ -92,8 +92,8 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'keys', label: 'API Keys', icon: <KeyRound size={14} /> },
-    { id: 'models', label: 'Model OpenRouter', icon: <Boxes size={14} /> },
-    { id: 'presets', label: 'Preset', icon: <SlidersHorizontal size={14} /> },
+    { id: 'models', label: 'OpenRouter Models', icon: <Boxes size={14} /> },
+    { id: 'presets', label: 'Presets', icon: <SlidersHorizontal size={14} /> },
     { id: 'backup', label: 'Backup', icon: <Download size={14} /> },
   ];
 
@@ -102,17 +102,21 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="flex max-h-[85vh] w-full max-w-2xl animate-fade-up flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
+        className="flex h-[560px] max-h-[85vh] w-full max-w-2xl animate-fade-up flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-line px-6 py-4">
-          <h2 className="text-base font-semibold text-white">Pengaturan</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-white">
+        <div className="flex shrink-0 items-center justify-between border-b border-line px-6 py-4">
+          <h2 className="text-base font-semibold text-white">Settings</h2>
+          <button
+            onClick={onClose}
+            aria-label="Close settings"
+            className="rounded-full p-1.5 text-muted transition hover:bg-surface-2 hover:text-white"
+          >
             <X size={17} />
           </button>
         </div>
 
-        <div className="flex gap-1 overflow-x-auto border-b border-line px-5 py-2.5 text-sm">
+        <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-5 py-2.5 text-sm">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -130,8 +134,8 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           {tab === 'keys' && (
             <form onSubmit={handleSaveKeys} className="space-y-4" autoComplete="off">
               <p className="text-xs leading-relaxed text-muted">
-                Key disimpan hanya di browser (<code>localStorage</code>) dan dikirim lewat header saat request. Kosongkan
-                untuk memakai key default dari <code>.env.local</code>.
+                Keys are stored only in your browser (<code>localStorage</code>) and sent via request headers. Leave blank
+                to use the default keys from server <code>.env.local</code>.
               </p>
               {(
                 [
@@ -156,9 +160,9 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
               ))}
               <div className="flex items-center gap-3 pt-1">
                 <button className="rounded-full bg-white px-5 py-2 text-sm font-medium text-black transition hover:bg-neutral-200">
-                  Simpan
+                  Save
                 </button>
-                {savedNotice && <span className="text-xs text-white">Tersimpan di browser.</span>}
+                {savedNotice && <span className="text-xs text-white">Saved in browser.</span>}
               </div>
             </form>
           )}
@@ -166,39 +170,43 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           {tab === 'models' && (
             <div className="space-y-5">
               <p className="text-xs leading-relaxed text-muted">
-                Tambahkan model apa pun dari <span className="text-white underline">openrouter.ai/models</span> (mis.{' '}
-                <code>openai/gpt-4.1</code>, <code>anthropic/claude-sonnet-4.5</code>). Model berbayar membutuhkan saldo
-                OpenRouter.
+                Add any model from <span className="text-white underline">openrouter.ai/models</span> (e.g.{' '}
+                <code>openai/gpt-4.1</code>, <code>anthropic/claude-sonnet-4.5</code>). Paid models require OpenRouter
+                credits.
               </p>
               <form onSubmit={addCustomModel} className="space-y-2.5 rounded-2xl border border-line p-4">
                 <input
                   value={cmId}
                   onChange={(e) => setCmId(e.target.value)}
-                  placeholder="Model ID, mis. openai/gpt-4.1"
+                  placeholder="Model ID, e.g. openai/gpt-4.1"
                   className={input}
                 />
                 <input
                   value={cmLabel}
                   onChange={(e) => setCmLabel(e.target.value)}
-                  placeholder="Nama tampilan (opsional)"
+                  placeholder="Display name (optional)"
                   className={input}
                 />
                 <button
                   disabled={!cmId.includes('/')}
                   className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
                 >
-                  <Plus size={14} /> Tambah model
+                  <Plus size={14} /> Add model
                 </button>
               </form>
               <div className="space-y-2">
-                {customModels.length === 0 && <p className="text-sm text-muted">Belum ada model kustom.</p>}
+                {customModels.length === 0 && <p className="text-sm text-muted">No custom models added yet.</p>}
                 {customModels.map((m) => (
                   <div key={m.id} className="flex items-center justify-between rounded-xl border border-line px-4 py-2.5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">{m.label}</p>
                       <p className="truncate font-mono text-xs text-muted">{m.id}</p>
                     </div>
-                    <button onClick={() => removeCustomModel(m.id)} className="text-muted hover:text-white" aria-label="Hapus model">
+                    <button
+                      onClick={() => removeCustomModel(m.id)}
+                      className="text-muted hover:text-white"
+                      aria-label="Delete model"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -210,9 +218,9 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           {tab === 'presets' && (
             <div className="space-y-5">
               <form onSubmit={(e) => void createPreset(e)} className="space-y-2.5 rounded-2xl border border-line p-4">
-                <p className="text-sm font-medium text-white">Preset baru</p>
+                <p className="text-sm font-medium text-white">New preset</p>
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  <input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Nama preset" className={input} />
+                  <input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Preset name" className={input} />
                   <select value={pModel} onChange={(e) => setPModel(e.target.value)} className={input}>
                     {models.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -221,7 +229,12 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
                     ))}
                   </select>
                 </div>
-                <input value={pDesc} onChange={(e) => setPDesc(e.target.value)} placeholder="Deskripsi (opsional)" className={input} />
+                <input
+                  value={pDesc}
+                  onChange={(e) => setPDesc(e.target.value)}
+                  placeholder="Description (optional)"
+                  className={input}
+                />
                 <textarea
                   value={pPrompt}
                   onChange={(e) => setPPrompt(e.target.value)}
@@ -233,11 +246,11 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
                   disabled={pBusy || !pName.trim() || !pPrompt.trim()}
                   className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-40"
                 >
-                  <Plus size={14} /> Simpan preset
+                  <Plus size={14} /> Save preset
                 </button>
               </form>
               <div className="space-y-2">
-                {presets.length === 0 && <p className="text-sm text-muted">Belum ada preset.</p>}
+                {presets.length === 0 && <p className="text-sm text-muted">No presets saved yet.</p>}
                 {presets.map((p) => (
                   <div key={p.id} className="flex items-start justify-between gap-3 rounded-xl border border-line p-4">
                     <div className="min-w-0">
@@ -245,7 +258,11 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
                       {p.description && <p className="text-xs text-muted">{p.description}</p>}
                       <p className="mt-1 line-clamp-2 text-xs text-muted/80">{p.systemPrompt}</p>
                     </div>
-                    <button onClick={() => void deletePreset(p.id)} className="text-muted hover:text-white" aria-label="Hapus preset">
+                    <button
+                      onClick={() => void deletePreset(p.id)}
+                      className="text-muted hover:text-white"
+                      aria-label="Delete preset"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -257,7 +274,7 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           {tab === 'backup' && (
             <div className="space-y-4">
               <p className="text-sm text-muted">
-                Unduh seluruh riwayat chat, alternatif jawaban, dan preset dari Neon PostgreSQL dalam satu klik.
+                Download all chats, archived alternatives, and system prompt presets from Neon PostgreSQL in one click.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
@@ -270,7 +287,7 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
                   href="/api/chats/export?format=md"
                   className="flex items-center gap-2 rounded-full border border-line px-5 py-2.5 text-sm font-medium text-white transition hover:bg-surface-2"
                 >
-                  <Download size={15} /> Versi baca (.md)
+                  <Download size={15} /> Readable export (.md)
                 </a>
               </div>
             </div>

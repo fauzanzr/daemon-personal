@@ -16,12 +16,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });
+  // Session cookie (no maxAge/expires): automatically cleared when the browser closes.
   res.cookies.set(COOKIE, sha(expected), {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60 * 24 * 30,
   });
   return res;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MODELS, DEFAULT_FALLBACK, type ModelInfo } from './models';
+import { MODELS, DEFAULT_FALLBACK, DEFAULT_CONTEXT_WINDOW, type ModelInfo } from './models';
 
 const KEY = 'daemon_personal_custom_models';
 const EVENT = 'daemon-custom-models-changed';
@@ -15,6 +15,7 @@ export function loadCustomModels(): ModelInfo[] {
       label: m.label || m.id,
       provider: 'openrouter',
       fallback: DEFAULT_FALLBACK,
+      contextWindow: DEFAULT_CONTEXT_WINDOW,
       custom: true,
     }));
   } catch {

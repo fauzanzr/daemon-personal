@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { LogOut, Pin, Plus, Search, Settings, Trash2 } from 'lucide-react';
+import { DaemonLogo } from '@/components/brand/daemon-logo';
 
 export interface ChatSummary {
   id: string;
@@ -50,7 +51,7 @@ function Group({
             </Link>
             <button
               onClick={() => props.onTogglePin(c.id, !c.isPinned)}
-              title={c.isPinned ? 'Lepas pin' : 'Pin'}
+              title={c.isPinned ? 'Unpin' : 'Pin'}
               className={`rounded-full p-1 transition ${
                 c.isPinned ? 'text-white' : 'text-muted opacity-0 hover:text-white group-hover:opacity-100'
               }`}
@@ -59,7 +60,7 @@ function Group({
             </button>
             <button
               onClick={() => props.onDelete(c.id)}
-              title="Hapus"
+              title="Delete"
               className="rounded-full p-1 text-muted opacity-0 transition hover:text-white group-hover:opacity-100"
             >
               <Trash2 size={13} />
@@ -84,8 +85,9 @@ export function ChatSidebar({
   const [query, setQuery] = useState('');
 
   async function logout() {
+    sessionStorage.removeItem('daemon_tab_session');
     await fetch('/api/auth', { method: 'DELETE' });
-    window.location.href = '/login';
+    window.location.replace('/login');
   }
 
   const shared = { activeChatId, onTogglePin, onDelete };
@@ -95,11 +97,18 @@ export function ChatSidebar({
       className={`shrink-0 overflow-hidden border-r border-line bg-[#0f0f0f] transition-[width] duration-300 ease-out ${open ? 'w-72' : 'w-0 border-r-0'}`}
     >
       <div className="flex h-screen w-72 flex-col p-3">
+        <div className="mb-3 flex items-center gap-2.5 px-1.5 pt-0.5">
+          <div className="overflow-hidden rounded-lg border border-white/10">
+            <DaemonLogo size={24} />
+          </div>
+          <span className="text-sm font-medium tracking-tight text-white">Daemon Personal</span>
+        </div>
+
         <button
           onClick={onNewChat}
           className="mb-3 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-white transition hover:bg-surface-2"
         >
-          <Plus size={15} /> Chat baru
+          <Plus size={15} /> New chat
         </button>
 
         <div className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2">
@@ -110,22 +119,29 @@ export function ChatSidebar({
               setQuery(e.target.value);
               onSearch(e.target.value);
             }}
-            placeholder="Cari chat"
+            placeholder="Search chats"
             className="w-full bg-transparent text-sm text-white outline-none placeholder:text-muted"
           />
         </div>
 
         <nav className="-mr-1 flex-1 overflow-y-auto pr-1">
-          {chats.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted">Belum ada riwayat chat.</p>}
-          <Group title="Disematkan" items={chats.filter((c) => c.isPinned)} props={shared} />
-          <Group title="Terbaru" items={chats.filter((c) => !c.isPinned)} props={shared} />
+          {chats.length === 0 && <p className="px-3 py-6 text-center text-xs text-muted">No chat history yet.</p>}
+          <Group title="Pinned" items={chats.filter((c) => c.isPinned)} props={shared} />
+          <Group title="Recent" items={chats.filter((c) => !c.isPinned)} props={shared} />
         </nav>
 
         <div className="flex items-center justify-between border-t border-line pt-2.5 text-sm text-muted">
-          <button onClick={onOpenSettings} className="flex items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-surface hover:text-white">
-            <Settings size={15} /> Pengaturan
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-surface hover:text-white"
+          >
+            <Settings size={15} /> Settings
           </button>
-          <button onClick={() => void logout()} title="Keluar" className="rounded-xl p-2 transition hover:bg-surface hover:text-white">
+          <button
+            onClick={() => void logout()}
+            title="Sign out"
+            className="rounded-xl p-2 transition hover:bg-surface hover:text-white"
+          >
             <LogOut size={15} />
           </button>
         </div>

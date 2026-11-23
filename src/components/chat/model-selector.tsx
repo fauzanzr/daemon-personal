@@ -64,7 +64,7 @@ export function ModelSelector({ value, onChange }: { value: string; onChange: (i
                 {list.map((m) => {
                   const st = health[m.id];
                   const badge =
-                    st?.state === 'high_traffic' ? 'High traffic' : st?.state === 'busy' ? 'Ramai' : null;
+                    st?.state === 'high_traffic' ? 'High traffic' : st?.state === 'busy' ? 'Busy' : null;
                   return (
                     <button
                       key={m.id}
