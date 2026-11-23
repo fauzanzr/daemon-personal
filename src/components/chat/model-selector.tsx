@@ -37,22 +37,22 @@ export function ModelSelector({ value, onChange }: { value: string; onChange: (i
   const currentStatus = health[value];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-[#f2f2f2] transition hover:bg-surface"
+        className="flex max-w-[180px] items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium text-[#f2f2f2] transition hover:bg-surface sm:max-w-none sm:gap-2 sm:px-3"
       >
-        <span>{modelLabel(value)}</span>
+        <span className="truncate">{modelLabel(value)}</span>
         {currentStatus?.state === 'high_traffic' && (
-          <span className="rounded-full border border-white/20 px-1.5 py-0.5 text-[10px] font-normal text-[#b5b5b5]">
+          <span className="hidden rounded-full border border-white/20 px-1.5 py-0.5 text-[10px] font-normal text-[#b5b5b5] sm:inline-block">
             High traffic
           </span>
         )}
-        <ChevronDown size={14} className={`text-muted transition ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`shrink-0 text-muted transition ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 max-h-96 w-80 animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
+        <div className="absolute left-0 top-full z-30 mt-1.5 max-h-[65dvh] w-72 max-w-[calc(100vw-2rem)] animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70 sm:w-80">
           {(['google', 'openrouter', 'groq'] as Provider[]).map((p) => {
             const list = models.filter((m) => m.provider === p);
             if (list.length === 0) return null;

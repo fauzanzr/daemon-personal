@@ -78,7 +78,12 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
     setTabReady(true);
   }, []);
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Open sidebar by default on desktop/tablet (>= 768px), keep closed on mobile phones
+  useEffect(() => {
+    if (window.innerWidth >= 768) setSidebarOpen(true);
+  }, []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [presets, setPresets] = useState<PresetItem[]>([]);
@@ -469,15 +474,18 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
     searchUsed[id] ? (searchUsed[id] === 'google-grounding' ? 'Google Search' : 'Web · Tavily') : undefined;
 
   if (!tabReady) {
-    return <div className="h-screen bg-bg" />;
+    return <div className="h-dvh bg-bg" />;
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg">
+    <div className="flex h-dvh w-full overflow-hidden bg-bg">
       <ChatSidebar
         chats={chats}
         activeChatId={chatId}
         open={sidebarOpen}
+        onCloseMobile={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarOpen(false);
+        }}
         onNewChat={startNewChat}
         onSearch={(q) => void loadChats(q)}
         onTogglePin={(id, pin) => void togglePin(id, pin)}
@@ -485,12 +493,13 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center gap-2 border-b border-line/60 px-3 py-2.5">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center gap-1.5 border-b border-line/60 px-2.5 py-2 sm:gap-2 sm:px-3 sm:py-2.5">
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            className="rounded-full p-2 text-muted transition hover:bg-surface hover:text-white"
+            className="shrink-0 rounded-full p-2 text-muted transition hover:bg-surface hover:text-white"
             title="Toggle sidebar"
+            aria-label="Toggle sidebar"
           >
             <PanelLeft size={18} />
           </button>
@@ -499,7 +508,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
             <select
               value={activePresetId}
               onChange={(e) => applyPreset(e.target.value)}
-              className="max-w-44 rounded-full bg-transparent px-3 py-1.5 text-sm text-muted outline-none transition hover:bg-surface hover:text-white"
+              className="hidden max-w-44 rounded-full bg-transparent px-3 py-1.5 text-sm text-muted outline-none transition hover:bg-surface hover:text-white lg:block"
             >
               <option value="" className="bg-surface">
                 Default prompt
@@ -512,15 +521,15 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
             </select>
           )}
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
             <div
               title={`Estimated context used: ~${contextUsage.tokens.toLocaleString()} / ${contextUsage.limit.toLocaleString()} tokens (${contextUsage.pct}%)${
                 contextUsage.pct >= 70 ? ' — Consider starting a new chat' : ''
               }`}
-              className="flex items-center gap-2 rounded-full border border-line px-3 py-1 text-xs text-muted"
+              className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[11px] text-muted sm:gap-2 sm:px-3 sm:text-xs"
             >
-              <span>Context {contextUsage.pct}%</span>
-              <span className="h-1.5 w-14 overflow-hidden rounded-full bg-surface-2">
+              <span>{contextUsage.pct}%</span>
+              <span className="hidden h-1.5 w-14 overflow-hidden rounded-full bg-surface-2 sm:block">
                 <span
                   className="block h-full rounded-full bg-white transition-all duration-300"
                   style={{ width: `${Math.max(contextUsage.tokens > 0 ? 4 : 0, contextUsage.pct)}%` }}
@@ -529,14 +538,14 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
               {contextUsage.pct >= 70 && (
                 <button
                   onClick={startNewChat}
-                  className="ml-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-black transition hover:bg-neutral-200"
+                  className="ml-0.5 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-black transition hover:bg-neutral-200"
                 >
-                  {contextUsage.pct >= 90 ? 'Limit near · New chat' : 'New chat'}
+                  {contextUsage.pct >= 90 ? 'Limit · New' : 'New chat'}
                 </button>
               )}
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2 rounded-full px-2.5 py-1.5 text-xs text-muted transition hover:bg-surface hover:text-white">
+            <label className="hidden cursor-pointer items-center gap-2 rounded-full px-2.5 py-1.5 text-xs text-muted transition hover:bg-surface hover:text-white md:flex">
               <input
                 type="checkbox"
                 checked={slidingWindow}
@@ -549,7 +558,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
         </header>
 
         {compareMode && (
-          <div className="flex animate-fade-up flex-wrap items-center gap-2 border-b border-line/60 px-5 py-2.5 text-xs text-muted">
+          <div className="flex shrink-0 animate-fade-up flex-wrap items-center gap-1.5 border-b border-line/60 px-3 py-2 text-xs text-muted sm:gap-2 sm:px-5 sm:py-2.5">
             <span>Compare 2–3 models:</span>
             {models.map((m) => {
               const on = compareModels.includes(m.id);
@@ -557,7 +566,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
                 <button
                   key={m.id}
                   onClick={() => toggleCompareModel(m.id)}
-                  className={`rounded-full border px-3 py-1 transition ${
+                  className={`rounded-full border px-2.5 py-1 transition sm:px-3 ${
                     on ? 'border-white bg-white font-medium text-black' : 'border-line hover:border-white/30 hover:text-white'
                   }`}
                 >
@@ -568,20 +577,20 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto px-4">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-4">
           {messages.length === 0 && !compare ? (
-            <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center pb-16">
+            <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center px-2 pb-12">
               <div className="animate-fade-up text-center">
-                <h2 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">
+                <h2 className="text-2xl font-medium tracking-tight text-white sm:text-4xl">
                   How can I help you today?
                 </h2>
-                <p className="mt-3 text-sm text-muted">
+                <p className="mt-2.5 text-xs text-muted sm:mt-3 sm:text-sm">
                   Enable Web Search for real-time answers, or attach documents and paste screenshots.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="mx-auto max-w-3xl space-y-8 py-6">
+            <div className="mx-auto max-w-3xl space-y-6 py-4 sm:space-y-8 sm:py-6">
               {messages.map((m, i) => (
                 <div key={m.id} className="space-y-3">
                   <MessageBubble
@@ -645,7 +654,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
                           <RefreshCw size={11} /> Switch model & retry <ChevronDown size={12} />
                         </button>
                         {switchMenuOpen && (
-                          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-64 w-64 animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
+                          <div className="absolute left-0 top-full z-30 mt-1.5 max-h-60 w-64 max-w-[calc(100vw-3rem)] animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
                             {models
                               .filter((m) => m.id !== modelId)
                               .map((m) => (
@@ -674,8 +683,9 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
 
               {compare && (
                 <div
-                  className="grid max-w-none gap-3"
-                  style={{ gridTemplateColumns: `repeat(${compare.length}, minmax(0, 1fr))` }}
+                  className={`grid max-w-none grid-cols-1 gap-3 md:grid-cols-2 ${
+                    compare.length >= 3 ? 'lg:grid-cols-3' : ''
+                  }`}
                 >
                   {compare.map((c, i) => (
                     <div
@@ -718,7 +728,7 @@ export function ChatInterface({ initialChatId }: { initialChatId?: string }) {
           )}
         </main>
 
-        <footer className="px-4 pb-5 pt-2">
+        <footer className="shrink-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
           {notice && <p className="mb-2 text-center text-xs text-[#d4d4d4]">{notice}</p>}
           <PromptInput
             onSubmit={(p) => void handleSubmit(p)}

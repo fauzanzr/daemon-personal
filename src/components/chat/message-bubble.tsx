@@ -34,7 +34,7 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
     const images = message.parts.filter((p) => p.type === 'file' && p.mediaType.startsWith('image/'));
     return (
       <div className="flex animate-fade-up justify-end">
-        <div className="max-w-[85%] space-y-2 rounded-3xl rounded-br-lg border border-line bg-surface-2 px-5 py-3 text-[15px] leading-relaxed text-white">
+        <div className="max-w-[90%] space-y-2 break-words rounded-3xl rounded-br-lg border border-line bg-surface-2 px-4 py-2.5 text-[15px] leading-relaxed text-white [overflow-wrap:anywhere] sm:max-w-[85%] sm:px-5 sm:py-3">
           {docs.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {docs.map((d, i) => (
@@ -57,15 +57,15 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
   }
 
   return (
-    <div className="group flex animate-fade-up gap-3.5">
+    <div className="group flex animate-fade-up gap-2.5 sm:gap-3.5">
       <div className="mt-0.5 shrink-0 overflow-hidden rounded-lg border border-white/10">
-        <DaemonLogo size={28} />
+        <DaemonLogo size={26} />
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <div className="text-[15px]">
           <Markdown>{raw || '...'}</Markdown>
         </div>
-        <div className="flex flex-wrap items-center gap-1 text-xs text-muted opacity-75 transition group-hover:opacity-100">
+        <div className="flex flex-wrap items-center gap-1 text-xs text-muted opacity-100 transition sm:opacity-75 sm:group-hover:opacity-100">
           <button
             onClick={() => {
               void navigator.clipboard.writeText(raw);
@@ -83,10 +83,11 @@ export function MessageBubble({ message, modelUsed, webLabel, onRevise, busy }: 
                 onClick={() => setMenu((v) => !v)}
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 transition hover:bg-surface hover:text-white disabled:opacity-40"
               >
-                <Wand2 size={13} /> Revise with another model <ChevronDown size={12} />
+                <Wand2 size={13} /> <span className="hidden sm:inline">Revise with another model</span>
+                <span className="sm:hidden">Revise</span> <ChevronDown size={12} />
               </button>
               {menu && (
-                <div className="absolute bottom-full left-0 z-20 mb-1 max-h-72 w-64 animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
+                <div className="absolute bottom-full left-0 z-20 mb-1 max-h-64 w-64 max-w-[calc(100vw-3rem)] animate-fade-up overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-2xl shadow-black/70">
                   {models
                     .filter((m) => m.id !== modelUsed)
                     .map((m) => (

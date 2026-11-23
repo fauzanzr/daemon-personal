@@ -57,7 +57,7 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
 
 export function Markdown({ children }: { children: string }) {
   return (
-    <div className="max-w-none space-y-3 leading-relaxed text-[#ececec] [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:decoration-[#60a5fa]/50 [&_a]:underline-offset-2 hover:[&_a]:text-[#93c5fd] hover:[&_a]:decoration-[#93c5fd] [&_blockquote]:border-l-2 [&_blockquote]:border-white/20 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-semibold [&_strong]:text-white [&_table]:w-full [&_td]:border [&_td]:border-line [&_td]:px-2.5 [&_td]:py-1.5 [&_th]:border [&_th]:border-line [&_th]:bg-surface [&_th]:px-2.5 [&_th]:py-1.5 [&_ul]:list-disc">
+    <div className="max-w-none space-y-3 break-words leading-relaxed text-[#ececec] [overflow-wrap:anywhere] [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:decoration-[#60a5fa]/50 [&_a]:underline-offset-2 hover:[&_a]:text-[#93c5fd] hover:[&_a]:decoration-[#93c5fd] [&_blockquote]:border-l-2 [&_blockquote]:border-white/20 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_strong]:font-semibold [&_strong]:text-white [&_table]:w-full [&_table]:text-sm [&_td]:border [&_td]:border-line [&_td]:px-2.5 [&_td]:py-1.5 [&_th]:border [&_th]:border-line [&_th]:bg-surface [&_th]:px-2.5 [&_th]:py-1.5 [&_ul]:list-disc">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -66,6 +66,11 @@ export function Markdown({ children }: { children: string }) {
             <a href={href} target="_blank" rel="noopener noreferrer">
               {children}
             </a>
+          ),
+          table: ({ children }) => (
+            <div className="my-3 overflow-x-auto">
+              <table>{children}</table>
+            </div>
           ),
           pre: ({ children }) => <>{children}</>,
           code({ className, children }) {

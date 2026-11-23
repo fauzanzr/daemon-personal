@@ -100,12 +100,12 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
   const customModels = models.filter((m) => m.custom);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-4" onClick={onClose}>
       <div
-        className="flex h-[560px] max-h-[85vh] w-full max-w-2xl animate-fade-up flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
+        className="flex h-[85dvh] max-h-[85dvh] w-full max-w-2xl animate-fade-up flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl sm:h-[560px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-line px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3.5 sm:px-6 sm:py-4">
           <h2 className="text-base font-semibold text-white">Settings</h2>
           <button
             onClick={onClose}
@@ -116,7 +116,7 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           </button>
         </div>
 
-        <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-5 py-2.5 text-sm">
+        <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-4 py-2.5 text-sm sm:px-5">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -130,7 +130,7 @@ export function SettingsModal({ open, onClose, presets, onPresetsChange }: Props
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {tab === 'keys' && (
             <form onSubmit={handleSaveKeys} className="space-y-4" autoComplete="off">
               <p className="text-xs leading-relaxed text-muted">

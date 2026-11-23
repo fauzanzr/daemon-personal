@@ -106,7 +106,7 @@ export function PromptInput({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <div className="rounded-3xl border border-line bg-surface p-3 shadow-lg shadow-black/50 transition focus-within:border-white/30">
+      <div className="rounded-2xl border border-line bg-surface p-2.5 shadow-lg shadow-black/50 transition focus-within:border-white/30 sm:rounded-3xl sm:p-3">
         {(docs.length > 0 || images.length > 0) && (
           <div className="mb-2 flex flex-wrap gap-2 px-1">
             {docs.map((d, i) => (
@@ -141,7 +141,7 @@ export function PromptInput({
           ref={areaRef}
           value={text}
           rows={1}
-          placeholder="Ask anything... (Ctrl+V to paste a screenshot)"
+          placeholder="Ask anything..."
           onChange={(e) => {
             setText(e.target.value);
             autoResize();
@@ -153,10 +153,10 @@ export function PromptInput({
               send();
             }
           }}
-          className="max-h-56 w-full resize-none bg-transparent px-2 py-1.5 text-[15px] text-white outline-none placeholder:text-muted"
+          className="max-h-48 w-full resize-none bg-transparent px-2 py-1.5 text-base text-white outline-none placeholder:text-muted sm:max-h-56 sm:text-[15px]"
         />
 
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-1.5 sm:gap-2">
           <input
             ref={fileRef}
             type="file"

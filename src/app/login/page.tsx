@@ -47,7 +47,7 @@ export default function LoginPage() {
   const maskStyle = !show ? ({ WebkitTextSecurity: 'disc' } as CSSProperties) : undefined;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-bg px-4 py-12">
+    <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-bg px-4 py-10">
       <WaterRipples />
 
       {/* Subtle radial matte vignette for focus */}
@@ -102,7 +102,7 @@ export default function LoginPage() {
               data-lpignore="true"
               data-1p-ignore="true"
               style={maskStyle}
-              className="w-full rounded-xl border border-white/10 bg-[#0b0b0b]/90 px-3.5 py-2.5 pr-10 text-sm text-white outline-none transition placeholder:text-muted/70 focus:border-white/40"
+              className="w-full rounded-xl border border-white/10 bg-[#0b0b0b]/90 px-3.5 py-2.5 pr-10 text-base text-white outline-none transition placeholder:text-muted/70 focus:border-white/40 sm:text-sm"
             />
             <button
               type="button"
