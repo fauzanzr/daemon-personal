@@ -48,26 +48,27 @@ async function searchTavily(query: string, apiKey: string, maxResults = 8): Prom
 }
 
 /** Uses Tavily Search API when a key is available (no CAPTCHA scraping). */
-export async function searchWeb(query: string, tavilyKey?: string | null): Promise<WebSearchResponse> {
+export async function searchWeb(query: string, tavilyKey?: string | null, compact = false): Promise<WebSearchResponse> {
   const cleaned = cleanQuery(query);
   if (!cleaned || !tavilyKey) return { results: [] };
   try {
-    return await searchTavily(cleaned, tavilyKey);
+    return await searchTavily(cleaned, tavilyKey, compact ? 4 : 8);
   } catch {
     return { results: [] };
   }
 }
 
 /** Plain-text context (no XML-like tags or tool syntax, so models never echo raw markup/JSON). */
-export function formatSearchContext(query: string, data: WebSearchResponse): string {
+export function formatSearchContext(query: string, data: WebSearchResponse, compact = false): string {
   if (data.results.length === 0 && !data.answer) return '';
+  const maxSnippet = compact ? 360 : 900;
   const sections: string[] = [`LIVE WEB SEARCH RESULTS (already retrieved for "${cleanQuery(query)}"):`];
   if (data.answer) {
-    sections.push(`Summary: ${data.answer}`);
+    sections.push(`Summary: ${data.answer.slice(0, compact ? 500 : 1200)}`);
   }
   if (data.results.length > 0) {
     const body = data.results
-      .map((r, i) => `${i + 1}. ${r.title}\n   URL: ${r.url}\n   ${r.snippet}`)
+      .map((r, i) => `${i + 1}. ${r.title}\n   URL: ${r.url}\n   ${r.snippet.slice(0, maxSnippet)}`)
       .join('\n\n');
     sections.push(body);
   }

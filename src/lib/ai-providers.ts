@@ -68,9 +68,11 @@ export function shouldFallbackError(err: unknown): boolean {
   const e = err as { statusCode?: number; status?: number; message?: string; cause?: unknown } | undefined;
   if (!e) return false;
   if (e.statusCode === 503 || e.status === 503 || e.statusCode === 502 || e.status === 502) return true;
-  if (e.statusCode === 402 || e.status === 402) return true;
+  if (e.statusCode === 402 || e.status === 402 || e.statusCode === 413 || e.status === 413) return true;
   const msg = String(e.message ?? '').toLowerCase();
   if (
+    msg.includes('request too large') ||
+    msg.includes('tokens per minute') ||
     msg.includes('credits') ||
     msg.includes('no longer available') ||
     msg.includes('not a valid model') ||

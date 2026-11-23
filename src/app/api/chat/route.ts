@@ -87,8 +87,9 @@ async function startStream(
       tools = { google_search: google.tools.googleSearch({}) };
       searchMode = 'google-grounding';
     } else if (keys.tavily) {
-      const results = await searchWeb(latestQuery, keys.tavily);
-      const ctx = formatSearchContext(latestQuery, results);
+      const compact = provider === 'groq';
+      const results = await searchWeb(latestQuery, keys.tavily, compact);
+      const ctx = formatSearchContext(latestQuery, results, compact);
       if (ctx) {
         system = `${system}\n\n${ctx}`;
         searchMode = 'tavily';
