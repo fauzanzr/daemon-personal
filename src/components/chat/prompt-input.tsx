@@ -141,6 +141,7 @@ export function PromptInput({
           ref={areaRef}
           value={text}
           rows={1}
+          enterKeyHint="enter"
           placeholder="Ask anything..."
           onChange={(e) => {
             setText(e.target.value);
@@ -148,7 +149,11 @@ export function PromptInput({
           }}
           onPaste={onPaste}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+            const isMobile =
+              typeof window !== 'undefined' &&
+              (window.matchMedia('(pointer: coarse)').matches ||
+                /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isMobile) {
               e.preventDefault();
               send();
             }
